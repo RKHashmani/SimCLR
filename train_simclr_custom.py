@@ -106,21 +106,40 @@ def main():
     optimizer, scheduler = load_optimizer(args, model)
     criterion = NT_Xent(args.batch_size, args.temperature, args.world_size)
     
+    # Track best loss for saving best checkpoint
+    best_loss = float('inf')
+    best_epoch = -1
+    
     print("Starting training...")
     for epoch in range(args.start_epoch, args.epochs):
         loss_epoch = train(args, train_loader, model, criterion, optimizer, writer)
+        avg_loss = loss_epoch / len(train_loader)
         
         if scheduler:
             scheduler.step()
         
-        if args.nr == 0 and epoch % 10 == 0:
-            save_model(args, model, optimizer)
-        
         if args.nr == 0:
             lr = optimizer.param_groups[0]["lr"]
-            writer.add_scalar("Loss/train", loss_epoch / len(train_loader), epoch)
+            writer.add_scalar("Loss/train", avg_loss, epoch)
             writer.add_scalar("Misc/learning_rate", lr, epoch)
-            print(f"Epoch [{epoch}/{args.epochs}]\t Loss: {loss_epoch / len(train_loader)}\t lr: {round(lr, 5)}")
+            
+            # Save best checkpoint if loss improved
+            if avg_loss < best_loss:
+                best_loss = avg_loss
+                best_epoch = epoch
+                best_checkpoint_path = os.path.join(args.model_path, "checkpoint_best.tar")
+                if isinstance(model, torch.nn.DataParallel):
+                    torch.save(model.module.state_dict(), best_checkpoint_path)
+                else:
+                    torch.save(model.state_dict(), best_checkpoint_path)
+                print(f"Epoch [{epoch}/{args.epochs}]\t Loss: {avg_loss:.6f}\t lr: {round(lr, 5)}\t *New best!*")
+            else:
+                print(f"Epoch [{epoch}/{args.epochs}]\t Loss: {avg_loss:.6f}\t lr: {round(lr, 5)}")
+            
+            # Save periodic checkpoints every 10 epochs
+            if epoch % 10 == 0:
+                save_model(args, model, optimizer)
+            
             args.current_epoch += 1
     
     # Save final model
@@ -130,6 +149,7 @@ def main():
     
     print(f"\nTraining complete! Model saved to {args.model_path}")
     print(f"Final checkpoint: checkpoint_{args.current_epoch}.tar")
+    print(f"Best checkpoint: checkpoint_best.tar (epoch {best_epoch}, loss: {best_loss:.6f})")
 
 
 if __name__ == "__main__":

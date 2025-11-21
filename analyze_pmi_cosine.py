@@ -185,8 +185,8 @@ def main():
                        help="Path to the npz file")
     parser.add_argument("--model_path", type=str, default="save",
                        help="Path to directory containing model checkpoints")
-    parser.add_argument("--epoch_num", type=int, default=None,
-                       help="Epoch number to load checkpoint from (default: latest)")
+    parser.add_argument("--epoch_num", type=str, default=None,
+                       help="Epoch number to load checkpoint from, or 'best' for best checkpoint (default: auto-detect latest)")
     parser.add_argument("--output_plot", type=str, default="pmi_vs_cosine_sim.png",
                        help="Output path for the scatter plot")
     parser.add_argument("--batch_size", type=int, default=32,
@@ -197,12 +197,13 @@ def main():
     # Setup device
     args.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
-    # Find the latest checkpoint if epoch_num not specified
-    if args.epoch_num is None:
+    # Determine which checkpoint to load
+    if args.epoch_num is None or args.epoch_num == "latest":
+        # Find the latest checkpoint
         checkpoint_files = []
         if os.path.exists(args.model_path):
             for f in os.listdir(args.model_path):
-                if f.startswith("checkpoint_") and f.endswith(".tar"):
+                if f.startswith("checkpoint_") and f.endswith(".tar") and f != "checkpoint_best.tar":
                     try:
                         epoch = int(f.split("_")[1].split(".")[0])
                         checkpoint_files.append((epoch, f))
@@ -214,6 +215,16 @@ def main():
             print(f"Auto-detected latest checkpoint: epoch {args.epoch_num}")
         else:
             raise ValueError(f"No checkpoint files found in {args.model_path}")
+    elif args.epoch_num == "best":
+        # Use best checkpoint
+        args.epoch_num = "best"
+        print("Using best checkpoint")
+    else:
+        # Use specified epoch number
+        try:
+            args.epoch_num = int(args.epoch_num)
+        except ValueError:
+            raise ValueError(f"Invalid epoch_num: {args.epoch_num}. Must be an integer, 'best', or 'latest'")
     
     # Load dataset
     print(f"Loading dataset from {args.npz_path}")
@@ -228,7 +239,11 @@ def main():
     n_features = encoder.fc.in_features
     model = SimCLR(encoder, args.projection_dim, n_features)
     
-    model_fp = os.path.join(args.model_path, "checkpoint_{}.tar".format(args.epoch_num))
+    if args.epoch_num == "best":
+        model_fp = os.path.join(args.model_path, "checkpoint_best.tar")
+    else:
+        model_fp = os.path.join(args.model_path, "checkpoint_{}.tar".format(args.epoch_num))
+    
     if not os.path.exists(model_fp):
         raise FileNotFoundError(f"Model file not found: {model_fp}")
     

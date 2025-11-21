@@ -56,7 +56,17 @@ python train_simclr_custom.py \
 
 ### Step 2: Analyze PMI vs Cosine Similarity
 
-After training, run the analysis:
+After training, run the analysis. You can use the best checkpoint:
+
+```bash
+python analyze_pmi_cosine.py \
+    --npz_path datasets/datasets_4624753/simple_fig1_DAG_rhoTheta_0p010/simple_fig1_DAG_0.npz \
+    --model_path save \
+    --epoch_num best \
+    --output_plot pmi_vs_cosine_sim.png
+```
+
+Or use a specific epoch:
 
 ```bash
 python analyze_pmi_cosine.py \
@@ -92,7 +102,7 @@ python analyze_pmi_cosine.py \
 
 - `--npz_path`: Path to your npz file (required)
 - `--model_path`: Path to saved model checkpoints (default: "save")
-- `--epoch_num`: Epoch number to load checkpoint from (default: auto-detects latest)
+- `--epoch_num`: Epoch number to load checkpoint from, or `"best"` for best checkpoint, or `"latest"` for latest (default: auto-detects latest)
 - `--output_plot`: Output filename for the scatter plot (default: "pmi_vs_cosine_sim.png")
 - `--batch_size`: Batch size for extracting cosine similarities (default: 32)
 - `--resnet`: ResNet architecture - must match the trained model (default: from config.yaml)
@@ -103,9 +113,11 @@ python analyze_pmi_cosine.py \
 ### train_simclr_custom.py
 
 - Saves model checkpoints in the `model_path` directory
-- Checkpoints are saved every 10 epochs and at the end of training
-- Checkpoint files are named `checkpoint_{epoch_num}.tar`
+- **Best checkpoint**: Automatically saved as `checkpoint_best.tar` whenever training loss improves
+- **Periodic checkpoints**: Saved every 10 epochs as `checkpoint_{epoch_num}.tar`
+- **Final checkpoint**: Saved at the end of training
 - TensorBoard logs are saved to `runs/` directory
+- Training prints `*New best!*` when a new best checkpoint is saved
 
 ### analyze_pmi_cosine.py
 
