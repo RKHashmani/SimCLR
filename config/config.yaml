@@ -12,8 +12,9 @@ batch_size: 128
 image_size: 224
 start_epoch: 0
 epochs: 100
-dataset: "CIFAR10" # STL10
-pretrain: True 
+dataset: "CUSTOM" # STL10, CIFAR10, CUSTOM
+pretrain: True
+npz_path: "datasets/datasets_4628370/simple_fig1_DAG_rhoTheta_0p010/simple_fig1_DAG_0.npz" # Path to npz file for CUSTOM dataset 
 
 # model options
 resnet: "resnet18"
