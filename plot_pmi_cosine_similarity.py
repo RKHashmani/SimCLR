@@ -145,7 +145,11 @@ def plot_pmi_vs_cosine_similarity(PMI, cosine_similarities, output_path="pmi_vs_
     plt.tight_layout()
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     print(f"Plot saved to {output_path}")
-    plt.show()
+    try:
+        plt.show()
+    except:
+        # If display is not available (e.g., headless server), just save the file
+        print("Display not available, plot saved to file only")
 
 
 if __name__ == "__main__":
@@ -154,15 +158,14 @@ if __name__ == "__main__":
     for k, v in config.items():
         parser.add_argument(f"--{k}", default=v, type=type(v))
     
-    # Additional arguments for this script
-    parser.add_argument("--npz_path", type=str, 
-                       default="datasets/datasets_4628370/simple_fig1_DAG_rhoTheta_0p010/simple_fig1_DAG_0.npz",
-                       help="Path to npz file")
-    parser.add_argument("--output_plot", type=str, 
-                       default="pmi_vs_cosine_similarity.png",
-                       help="Output path for the plot")
-    parser.add_argument("--batch_size", type=int, default=64,
-                       help="Batch size for computing similarities")
+    # Additional arguments for this script (only if not already in config)
+    if "output_plot" not in config:
+        parser.add_argument("--output_plot", type=str, 
+                           default="pmi_vs_cosine_similarity.png",
+                           help="Output path for the plot")
+    if "batch_size" not in config:
+        parser.add_argument("--batch_size", type=int, default=64,
+                           help="Batch size for computing similarities")
     
     args = parser.parse_args()
     args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
