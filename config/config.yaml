@@ -5,6 +5,7 @@ nr: 0 # machine nr. in node (0 -- nodes - 1)
 dataparallel: 0 # Use DataParallel instead of DistributedDataParallel
 workers: 8
 dataset_dir: "./datasets"
+custom_npz_path: "" # path to custom npz file when dataset == "NPZ"
 
 # train options
 seed: 42 # sacred handles automatic seeding when passed in the config

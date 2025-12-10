@@ -21,6 +21,7 @@ from simclr.modules.sync_batchnorm import convert_model
 
 from model import load_optimizer, save_model
 from utils import yaml_config_hook
+from utils.npz_dataset import NPZPairDataset
 
 
 def train(args, train_loader, model, criterion, optimizer, writer):
@@ -75,6 +76,19 @@ def main(gpu, args):
             args.dataset_dir,
             download=True,
             transform=TransformsSimCLR(size=args.image_size),
+        )
+    elif args.dataset == "NPZ":
+        if not args.custom_npz_path:
+            raise ValueError("For dataset=NPZ, --custom_npz_path must be provided")
+        base_transform = torchvision.transforms.Compose(
+            [
+                torchvision.transforms.Resize((args.image_size, args.image_size)),
+                torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            ]
+        )
+        train_dataset = NPZPairDataset(
+            args.custom_npz_path,
+            transform=base_transform,
         )
     else:
         raise NotImplementedError
