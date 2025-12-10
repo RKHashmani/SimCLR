@@ -143,12 +143,15 @@ def main(gpu, args):
 
     args.global_step = 0
     args.current_epoch = 0
+    best_loss = float("inf")
+    best_epoch = -1
     for epoch in range(args.start_epoch, args.epochs):
         if train_sampler is not None:
             train_sampler.set_epoch(epoch)
         
         lr = optimizer.param_groups[0]["lr"]
         loss_epoch = train(args, train_loader, model, criterion, optimizer, writer)
+        avg_loss = loss_epoch / len(train_loader)
 
         if args.nr == 0 and scheduler:
             scheduler.step()
@@ -157,15 +160,22 @@ def main(gpu, args):
             save_model(args, model, optimizer)
 
         if args.nr == 0:
-            writer.add_scalar("Loss/train", loss_epoch / len(train_loader), epoch)
+            writer.add_scalar("Loss/train", avg_loss, epoch)
             writer.add_scalar("Misc/learning_rate", lr, epoch)
             print(
-                f"Epoch [{epoch}/{args.epochs}]\t Loss: {loss_epoch / len(train_loader)}\t lr: {round(lr, 5)}"
+                f"Epoch [{epoch}/{args.epochs}]\t Loss: {avg_loss}\t lr: {round(lr, 5)}"
             )
+            if avg_loss < best_loss:
+                best_loss = avg_loss
+                best_epoch = epoch
+                save_model(args, model, optimizer, checkpoint_name="best")
+                print(f"New best model saved at epoch {epoch} with loss {avg_loss}")
             args.current_epoch += 1
 
     ## end training
     save_model(args, model, optimizer)
+    if args.nr == 0:
+        print(f"Best epoch: {best_epoch} with loss {best_loss}")
 
 
 if __name__ == "__main__":

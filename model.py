@@ -31,8 +31,17 @@ def load_optimizer(args, model):
     return optimizer, scheduler
 
 
-def save_model(args, model, optimizer):
-    out = os.path.join(args.model_path, "checkpoint_{}.tar".format(args.current_epoch))
+def save_model(args, model, optimizer, checkpoint_name=None):
+    """
+    Saves model/optimizer state dict.
+    checkpoint_name overrides the epoch-based filename and should omit extension.
+    """
+    filename = (
+        f"{checkpoint_name}.tar"
+        if checkpoint_name is not None
+        else f"checkpoint_{args.current_epoch}.tar"
+    )
+    out = os.path.join(args.model_path, filename)
 
     # To save a DataParallel model generically, save the model.module.state_dict().
     # This way, you have the flexibility to load the model any way you want to any device you want.
