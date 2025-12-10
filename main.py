@@ -15,7 +15,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 # SimCLR
 from simclr import SimCLR
-from simclr.modules import NT_Xent, get_resnet, NPZPairedDataset
+from simclr.modules import NT_Xent, get_resnet
 from simclr.modules.transformations import TransformsSimCLR
 from simclr.modules.sync_batchnorm import convert_model
 
@@ -63,7 +63,6 @@ def main(gpu, args):
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
 
-    print(f"Loading dataset: {args.dataset}")
     if args.dataset == "STL10":
         train_dataset = torchvision.datasets.STL10(
             args.dataset_dir,
@@ -71,29 +70,14 @@ def main(gpu, args):
             download=True,
             transform=TransformsSimCLR(size=args.image_size),
         )
-        print(f"Loaded STL10 dataset from {args.dataset_dir}")
     elif args.dataset == "CIFAR10":
         train_dataset = torchvision.datasets.CIFAR10(
             args.dataset_dir,
             download=True,
             transform=TransformsSimCLR(size=args.image_size),
         )
-        print(f"Loaded CIFAR10 dataset from {args.dataset_dir}")
-    elif args.dataset == "CUSTOM":
-        # Custom npz dataset
-        npz_path = getattr(args, 'npz_path', None)
-        if npz_path is None:
-            raise ValueError("npz_path must be provided when dataset='CUSTOM'")
-        print(f"Loading custom dataset from: {npz_path}")
-        train_dataset = NPZPairedDataset(
-            npz_path=npz_path,
-            image_size=args.image_size
-        )
-        print(f"Loaded custom dataset with {len(train_dataset)} samples")
     else:
-        raise NotImplementedError(f"Dataset {args.dataset} not supported")
-    
-    print(f"Dataset loaded successfully. Total samples: {len(train_dataset)}")
+        raise NotImplementedError
 
     if args.nodes > 1:
         train_sampler = torch.utils.data.distributed.DistributedSampler(
@@ -178,11 +162,6 @@ if __name__ == "__main__":
         parser.add_argument(f"--{k}", default=v, type=type(v))
 
     args = parser.parse_args()
-    
-    # Debug: Print dataset configuration
-    print(f"Configuration loaded - Dataset: {args.dataset}")
-    if hasattr(args, 'npz_path'):
-        print(f"Configuration loaded - NPZ path: {args.npz_path}")
 
     # Master address for distributed data parallel
     os.environ["MASTER_ADDR"] = "127.0.0.1"

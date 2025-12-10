@@ -8,3 +8,4 @@ dist/
 simclr.egg-info
 lightning_logs/
 /.idea
+.DS_Store
